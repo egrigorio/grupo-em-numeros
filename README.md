@@ -1,6 +1,6 @@
 # Grupo em números
 
-Site estático que analisa exports `.txt` do WhatsApp inteiramente no navegador. Não faz uploads, não tem base de dados e não envia o conteúdo da conversa a nenhum servidor.
+Site estático que analisa exports `.txt` do WhatsApp inteiramente no navegador. Não faz uploads, não tem base de dados e não envia o conteúdo da conversa a nenhum servidor. Reconhece exports com datas DD/MM e MM/DD (a ordem é inferida quando um dos campos passa de 12).
 
 ## Uso
 
