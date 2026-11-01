@@ -6,7 +6,7 @@
   <meta name="description" content="Estatísticas privadas de conversas exportadas do WhatsApp.">
   <title>Grupo em números</title>
   <link rel="stylesheet" href="styles.css">
-  <style>.date-filter{display:flex;align-items:end;gap:12px;background:#eef2e9;border-radius:14px;padding:14px 16px;margin:-8px 0 16px;flex-wrap:wrap}.date-filter div{margin-right:auto}.date-filter strong,.date-filter span{display:block}.date-filter span{font-size:.75rem;color:#68726e;margin-top:3px}.date-filter label{font-size:.75rem;font-weight:800;display:grid;gap:4px}.date-filter input{font:inherit;padding:7px;border:1px solid #bbc6bc;border-radius:7px}.text-button{border:0;background:transparent;color:#3e765d;text-decoration:underline;font:inherit;font-size:.8rem;cursor:pointer;padding:9px}@media(max-width:680px){.date-filter{align-items:stretch}.date-filter div{width:100%}}</style>
+  <style>.date-filter{display:flex;align-items:end;gap:12px;background:#eef2e9;border-radius:14px;padding:14px 16px;margin:-8px 0 16px;flex-wrap:wrap}.date-filter div{margin-right:auto}.date-filter strong,.date-filter span{display:block}.date-filter span{font-size:.75rem;color:#68726e;margin-top:3px}.date-filter label{font-size:.75rem;font-weight:800;display:grid;gap:4px}.date-filter input{font:inherit;padding:7px;border:1px solid #bbc6bc;border-radius:7px}.text-button{border:0;background:transparent;color:#3e765d;text-decoration:underline;font:inherit;font-size:.8rem;cursor:pointer;padding:9px}.exclude{font-size:.78rem!important;display:flex!important;align-items:center;gap:5px;white-space:nowrap;color:#9b342c}.chart-figure{margin:0}.chart-svg{width:100%;height:auto;display:block}.chart-figure figcaption{font-size:.72rem;color:#68726e;margin-top:4px}.gridline{stroke:#d8ddd4;stroke-width:1}.bar{fill:#46856a}.bar.alt{fill:#ff9b67}.line{fill:none;stroke:#46856a;stroke-width:3}.point{fill:#46856a}.tick{fill:#68726e;font-size:11px;font-family:ui-rounded,system-ui,sans-serif}.label,.value{fill:#17211f;font-size:12px;font-family:ui-rounded,system-ui,sans-serif}.label{font-weight:700}.value{font-weight:800}.axis-title{fill:#42544b;font-size:12px;font-weight:800;font-family:ui-rounded,system-ui,sans-serif}@media(max-width:680px){.date-filter{align-items:stretch}.date-filter div{width:100%}.member-row{grid-template-columns:1fr!important}.exclude{justify-self:start}}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.chart-svg{break-inside:avoid;page-break-inside:avoid}.chart-figure{break-inside:avoid;page-break-inside:avoid}.chart-figure figcaption{display:block}.grid.two{grid-template-columns:1fr!important}.card{break-inside:avoid;page-break-inside:avoid}}</style>
 </head>
 <body>
   <main class="shell">
@@ -26,7 +26,7 @@
     <section id="mapping" class="panel hidden" aria-live="polite">
       <p class="eyebrow">PASSO 2 DE 2</p>
       <h2>Quem é quem?</h2>
-      <p>Confirme o nome real de cada autor identificado no export. Assim, nomes temporários ou “You” não entram no relatório.</p>
+      <p>Confirme o nome real de cada autor. Marque “Excluir” para removê-lo de todos os cálculos e gráficos deste relatório.</p>
       <form id="mappingForm">
         <div id="memberFields" class="member-fields"></div>
         <button type="submit" class="button">Gerar relatório</button>
@@ -46,11 +46,11 @@
         <button id="clearDates" class="text-button" type="button">Limpar</button>
       </section>
       <section id="summaryCards" class="summary"></section>
-      <section class="grid two"><article class="card"><h3>Mensagens por membro</h3><div id="messagesChart"></div></article><article class="card"><h3>Tamanho médio da mensagem</h3><div id="lengthChart"></div></article></section>
-      <section class="grid two"><article class="card"><h3>Atividade por hora</h3><div id="hourChart"></div></article><article class="card"><h3>Atividade por dia da semana</h3><div id="weekdayChart"></div></article></section>
-      <section class="grid"><article class="card"><h3>Evolução diária de mensagens</h3><div id="dailyChart"></div></article></section>
-      <section class="grid two"><article class="card"><h3>Menções feitas × recebidas</h3><div id="mentionsChart"></div></article><article class="card"><h3>Quem inicia conversa</h3><div id="startersChart"></div></article></section>
-      <section class="grid"><article class="card"><h3>Tempo médio de resposta</h3><div id="responseChart"></div></article></section>
+      <section class="grid two"><article class="card"><h3>Mensagens por membro</h3><div id="messagesChart" class="chart"></div></article><article class="card"><h3>Tamanho médio da mensagem</h3><div id="lengthChart" class="chart"></div></article></section>
+      <section class="grid two"><article class="card"><h3>Atividade por hora</h3><div id="hourChart" class="chart"></div></article><article class="card"><h3>Atividade por dia da semana</h3><div id="weekdayChart" class="chart"></div></article></section>
+      <section class="grid"><article class="card"><h3>Evolução diária de mensagens</h3><div id="dailyChart" class="chart"></div></article></section>
+      <section class="grid two"><article class="card"><h3>Menções feitas × recebidas</h3><div id="mentionsChart" class="chart"></div></article><article class="card"><h3>Quem inicia conversa</h3><div id="startersChart" class="chart"></div></article></section>
+      <section class="grid"><article class="card"><h3>Tempo médio de resposta</h3><div id="responseChart" class="chart"></div></article></section>
       <section class="method"><h3>Como calculamos</h3><p>Uma mensagem é cada linha iniciada por data, hora e autor; linhas seguintes entram na mesma mensagem. Eventos do sistema são ignorados. O tamanho é contado em caracteres (incluindo espaços). Uma conversa começa na primeira mensagem ou após mais de 60 minutos sem mensagens. Uma resposta é a primeira mensagem de outra pessoa após uma mensagem, quando o intervalo é de até 60 minutos. Menções são nomes de participantes precedidos por @; a correspondência não diferencia maiúsculas/minúsculas.</p></section>
       <footer>Gerado localmente em <span id="generatedAt"></span> · Nenhum dado foi enviado ou guardado.</footer>
     </section>
