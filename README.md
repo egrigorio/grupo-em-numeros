@@ -4,7 +4,7 @@ Site estático que analisa exports `.txt` do WhatsApp inteiramente no navegador.
 
 ## Uso
 
-Abra `dist/index.html` num navegador ou publique a pasta `dist` como um site estático. Escolha o ficheiro exportado, confirme os nomes dos membros e use **Guardar PDF** para abrir o diálogo do navegador e gravar o relatório em PDF.
+Abra `dist/index.html` num navegador ou publique a pasta `dist` como um site estático. Escolha o ficheiro exportado, confirme os nomes dos membros e use **Guardar PDF** para baixar o relatório em PDF. O PDF mantém cada gráfico inteiro numa página, inclui resumo, metodologia e numeração de páginas.
 
 ## Métricas
 

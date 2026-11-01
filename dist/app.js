@@ -1,5 +1,80 @@
 const state={messages:[],people:[]};
-async function exportPDF(){const button=$('#pdfButton'),report=$('#report');if(!window.html2canvas||!window.jspdf){alert('Não foi possível carregar o gerador de PDF. Verifique a sua ligação e tente novamente.');return}button.disabled=true;button.textContent='A gerar PDF…';document.body.classList.add('export-mode');try{await document.fonts.ready;const canvas=await window.html2canvas(report,{scale:1.6,backgroundColor:'#f5f3ed',useCORS:true,scrollY:-window.scrollY});const {jsPDF}=window.jspdf,pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4'}),margin=10,pageWidth=210-margin*2,pageHeight=297-margin*2,imageHeight=canvas.height*pageWidth/canvas.width,image=canvas.toDataURL('image/png');let y=margin,remaining=imageHeight;pdf.addImage(image,'PNG',margin,y,pageWidth,imageHeight);remaining-=pageHeight;while(remaining>0){pdf.addPage();y-=pageHeight;pdf.addImage(image,'PNG',margin,y,pageWidth,imageHeight);remaining-=pageHeight}pdf.save(`grupo-em-numeros-${new Date().toISOString().slice(0,10)}.pdf`)}catch(error){console.error(error);alert('Não foi possível gerar o PDF. Tente novamente.')}finally{document.body.classList.remove('export-mode');button.disabled=false;button.textContent='Guardar PDF'}}
+async function exportPDF(){
+  const button=$('#pdfButton');
+  if(!window.html2canvas||!window.jspdf){alert('Não foi possível carregar o gerador de PDF. Verifique a sua ligação e tente novamente.');return}
+  button.disabled=true;button.textContent='A gerar PDF…';
+  const stage=document.createElement('div');
+  stage.className='pdf-stage';stage.setAttribute('aria-hidden','true');document.body.append(stage);
+  try{
+    await document.fonts.ready;
+    const {jsPDF}=window.jspdf,pdf=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
+    const margin=16,contentWidth=178,pageBottom=275,green=[70,133,106],ink=[23,33,31],muted=[104,114,110];
+    const title=$('#reportTitle').textContent,meta=$('#reportMeta').textContent;
+    let y=0;
+    function startPage(first=false){
+      if(!first)pdf.addPage();
+      pdf.setFillColor(245,243,237);pdf.rect(0,0,210,297,'F');
+      y=first?29:30;
+    }
+    function ensure(height){if(y+height>pageBottom)startPage()}
+    startPage(true);
+    pdf.setTextColor(...ink);pdf.setFont('helvetica','bold');pdf.setFontSize(26);
+    pdf.text(title,margin,y);y+=10;
+    pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.setTextColor(...muted);
+    const metaLines=pdf.splitTextToSize(meta,contentWidth);
+    pdf.text(metaLines,margin,y);y+=metaLines.length*5+9;
+    const metrics=[...document.querySelectorAll('#summaryCards .metric')];
+    const gap=3,boxWidth=(contentWidth-gap*3)/4,boxHeight=23;
+    metrics.forEach((metric,i)=>{
+      const x=margin+i*(boxWidth+gap);
+      pdf.setFillColor(...(i===0?ink:green));pdf.roundedRect(x,y,boxWidth,boxHeight,2,2,'F');
+      pdf.setTextColor(255,255,255);pdf.setFont('helvetica','normal');pdf.setFontSize(7);
+      pdf.text(metric.querySelector('small').textContent,x+3,y+7);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(14);
+      pdf.text(metric.querySelector('strong').textContent,x+3,y+17);
+    });
+    y+=boxHeight+8;
+    const cards=[...document.querySelectorAll('#report .card')];
+    const hourCard=cards.splice(2,1)[0];
+    cards.splice(1,0,hourCard);
+    for(const card of cards){
+      const copy=card.cloneNode(true);
+      stage.replaceChildren(copy);
+      const canvas=await window.html2canvas(copy,{scale:2,backgroundColor:'#fffefa',useCORS:true,logging:false});
+      const imageHeight=canvas.height*contentWidth/canvas.width;
+      const maxHeight=pageBottom-30;
+      const drawHeight=Math.min(imageHeight,maxHeight);
+      ensure(drawHeight+5);
+      pdf.addImage(canvas.toDataURL('image/png'),'PNG',margin,y,contentWidth,drawHeight,undefined,'FAST');
+      y+=drawHeight+6;
+    }
+    const method=$('#report .method');
+    if(method){
+      const lines=pdf.splitTextToSize(method.querySelector('p').textContent,contentWidth-10);
+      const height=15+lines.length*4.3;
+      ensure(height+4);
+      pdf.setFillColor(234,243,232);pdf.roundedRect(margin,y,contentWidth,height,2,2,'F');
+      pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.setTextColor(...ink);
+      pdf.text('Como calculamos',margin+5,y+7);
+      pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(...muted);
+      pdf.text(lines,margin+5,y+13);
+    }
+    const pages=pdf.getNumberOfPages();
+    for(let page=1;page<=pages;page++){
+      pdf.setPage(page);
+      pdf.setFillColor(245,243,237);pdf.rect(0,0,210,20,'F');
+      pdf.setDrawColor(216,221,212);pdf.line(margin,19,210-margin,19);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(...green);
+      pdf.text('GRUPO EM NÚMEROS',margin,14);
+      pdf.setDrawColor(216,221,212);pdf.line(margin,282,210-margin,282);
+      pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(...muted);
+      pdf.text('Relatório gerado localmente. Nenhum dado enviado ou guardado.',margin,288);
+      pdf.text(`${page} / ${pages}`,210-margin,288,{align:'right'});
+    }
+    pdf.save(`grupo-em-numeros-${isoDay(new Date())}.pdf`);
+  }catch(error){console.error(error);alert('Não foi possível gerar o PDF. Tente novamente.')}
+  finally{stage.remove();button.disabled=false;button.textContent='Guardar PDF'}
+}
 const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 $('#chatFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;const parsed=parseChat(await file.text());if(!parsed.length){$('#fileError').textContent='Não reconheci mensagens neste ficheiro. Exporte a conversa como .txt e tente novamente.';return}state.messages=parsed;setupPeople(parsed);$('#intro').classList.add('hidden');$('#mapping').classList.remove('hidden')});
@@ -8,8 +83,8 @@ $('#newFile').addEventListener('click',()=>location.reload());$('#pdfButton').ad
 
 function parseChat(text){const rows=[],re=/^(?:\[)?(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?\]?\s*(?:-|–)?\s*(.*)$/;let current=null;for(const line of text.replace(/^\uFEFF/,'').split(/\r?\n/)){const m=line.match(re);if(m){const author=m[8].match(/^([^:]+):\s([\s\S]*)$/);if(author){let year=+m[3];if(year<100)year+=2000;let month=+m[1],day=+m[2];if(month>12)[month,day]=[day,month];let hour=+m[4];if(m[7]){if(m[7].toLowerCase()==='pm'&&hour<12)hour+=12;if(m[7].toLowerCase()==='am'&&hour===12)hour=0}const date=new Date(year,month-1,day,hour,+m[5],+(m[6]||0));if(!isNaN(date)&&date.getMonth()===month-1&&date.getDate()===day){current={date,author:author[1].trim(),text:author[2]};rows.push(current);continue}}current=null}else if(current)current.text+='\n'+line}return rows}
 function setupPeople(msgs){const authors=[...new Set(msgs.map(m=>m.author))].sort((a,b)=>a.localeCompare(b));$('#memberFields').innerHTML=authors.map((a,i)=>`<div class="member-row"><label for="p${i}">${esc(a)}</label><input id="p${i}" class="person-input" data-index="${i}" data-original="${esc(a)}" value="${esc(a==='You'?'':a)}" placeholder="Nome no contacto / nome real" required><label class="exclude"><input id="exclude-${i}" type="checkbox"> Excluir</label></div>`).join('')}
-function render(){const names=Object.fromEntries(state.people.map(p=>[p.original,p.name])),active=state.people.filter(p=>p.include),people=active.map(p=>p.name);const from=$('#dateFrom').value?new Date(`${$('#dateFrom').value}T00:00:00`):null,to=$('#dateTo').value?new Date(`${$('#dateTo').value}T23:59:59.999`):null;const msgs=state.messages.filter(m=>active.some(p=>p.original===m.author)&&(!from||m.date>=from)&&(!to||m.date<=to)).map(m=>({...m,name:names[m.author]}));if(!msgs.length){$('#reportMeta').textContent='Nenhuma mensagem dos membros incluídos no período escolhido.';$('#summaryCards').innerHTML='';document.querySelectorAll('.chart').forEach(x=>x.innerHTML='');return}const by=fn=>Object.fromEntries(people.map(p=>[p,fn(p)]));const count=by(p=>msgs.filter(m=>m.name===p).length),avgLength=by(p=>{const a=msgs.filter(m=>m.name===p);return a.length?a.reduce((n,m)=>n+[...m.text].length,0)/a.length:0});const hours=Array(24).fill(0),week=Array(7).fill(0),days={};msgs.forEach(m=>{hours[m.date.getHours()]++;week[(m.date.getDay()+6)%7]++;const d=isoDay(m.date);days[d]=(days[d]||0)+1});const made=by(()=>0),received=by(()=>0),aliases=people.map(p=>({name:p,key:p.toLocaleLowerCase()})).sort((a,b)=>b.key.length-a.key.length);msgs.forEach(m=>aliases.forEach(a=>{if(new RegExp(`(^|[^\\p{L}\\p{N}])@${escapeRE(a.key)}(?=$|[^\\p{L}\\p{N}])`,'iu').test(m.text)){made[m.name]++;received[a.name]++}}));const starters=by(()=>0),responses=by(()=>[]);msgs.forEach((m,i)=>{if(i===0||m.date-msgs[i-1].date>3600000)starters[m.name]++;if(i&&m.name!==msgs[i-1].name){const gap=m.date-msgs[i-1].date;if(gap<=3600000)responses[m.name].push(gap)}});const response=by(p=>responses[p].length?responses[p].reduce((a,b)=>a+b,0)/responses[p].length:null);
-$('#reportMeta').textContent=`${msgs.length.toLocaleString('pt-BR')} mensagens · ${people.length} membros incluídos · ${localDay(msgs[0].date)} — ${localDay(msgs.at(-1).date)}`;$('#generatedAt').textContent=new Date().toLocaleString('pt-BR');const activeDays=Object.keys(days).length;$('#summaryCards').innerHTML=metric('Mensagens',msgs.length.toLocaleString('pt-BR'))+metric('Membros incluídos',people.length)+metric('Dias ativos',activeDays)+metric('Período',`${Math.ceil((msgs.at(-1).date-msgs[0].date)/86400000)+1} dias`);
+function render(){const names=Object.fromEntries(state.people.map(p=>[p.original,p.name])),active=state.people.filter(p=>p.include),people=active.map(p=>p.name);const from=$('#dateFrom').value?new Date(`${$('#dateFrom').value}T00:00:00`):null,to=$('#dateTo').value?new Date(`${$('#dateTo').value}T23:59:59.999`):null;const msgs=state.messages.filter(m=>active.some(p=>p.original===m.author)&&(!from||m.date>=from)&&(!to||m.date<=to)).map(m=>({...m,name:names[m.author]}));if(!msgs.length){$('#reportMeta').textContent='Nenhuma mensagem dos membros incluídos no período escolhido.';$('#summaryCards').innerHTML='';$('#pdfButton').disabled=true;document.querySelectorAll('.chart').forEach(x=>x.innerHTML='');return}$('#pdfButton').disabled=false;const by=fn=>Object.fromEntries(people.map(p=>[p,fn(p)]));const count=by(p=>msgs.filter(m=>m.name===p).length),avgLength=by(p=>{const a=msgs.filter(m=>m.name===p);return a.length?a.reduce((n,m)=>n+[...m.text].length,0)/a.length:0});const hours=Array(24).fill(0),week=Array(7).fill(0),days={};msgs.forEach(m=>{hours[m.date.getHours()]++;week[(m.date.getDay()+6)%7]++;const d=isoDay(m.date);days[d]=(days[d]||0)+1});const made=by(()=>0),received=by(()=>0),aliases=people.map(p=>({name:p,key:p.toLocaleLowerCase()})).sort((a,b)=>b.key.length-a.key.length);msgs.forEach(m=>aliases.forEach(a=>{if(new RegExp(`(^|[^\\p{L}\\p{N}])@${escapeRE(a.key)}(?=$|[^\\p{L}\\p{N}])`,'iu').test(m.text)){made[m.name]++;received[a.name]++}}));const starters=by(()=>0),responses=by(()=>[]);msgs.forEach((m,i)=>{if(i===0||m.date-msgs[i-1].date>3600000)starters[m.name]++;if(i&&m.name!==msgs[i-1].name){const gap=m.date-msgs[i-1].date;if(gap<=3600000)responses[m.name].push(gap)}});const response=by(p=>responses[p].length?responses[p].reduce((a,b)=>a+b,0)/responses[p].length:null);
+$('#reportMeta').textContent=`${msgs.length.toLocaleString('pt-BR')} mensagens · ${people.length} membros incluídos · ${localDay(msgs[0].date)} — ${localDay(msgs.at(-1).date)}`;$('#generatedAt').textContent=new Date().toLocaleString('pt-BR');const activeDays=Object.keys(days).length;const firstDay=isoDay(msgs[0].date),lastDay=isoDay(msgs.at(-1).date),periodDays=(Date.parse(lastDay+'T00:00:00Z')-Date.parse(firstDay+'T00:00:00Z'))/86400000+1;$('#summaryCards').innerHTML=metric('Mensagens',msgs.length.toLocaleString('pt-BR'))+metric('Membros incluídos',people.length)+metric('Dias ativos',activeDays)+metric('Período',`${periodDays} dias`);
 horizontalChart('#messagesChart',count,'Mensagens',n=>n.toLocaleString('pt-BR'));horizontalChart('#lengthChart',avgLength,'Caracteres por mensagem',n=>`${Math.round(n)}`);verticalChart('#hourChart',hours,Array.from({length:24},(_,i)=>`${i}h`),'Hora do dia','Mensagens');verticalChart('#weekdayChart',week,['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],'Dia da semana','Mensagens');lineChart('#dailyChart',Object.entries(days),'Data','Mensagens');groupedChart('#mentionsChart',people,made,received,'Menções','Feitas','Recebidas');horizontalChart('#startersChart',starters,'Conversas iniciadas',n=>n);horizontalChart('#responseChart',response,'Tempo médio (min)',n=>n===null?'—':formatDuration(n));}
 function metric(label,value){return `<div class="metric"><small>${label}</small><strong>${value}</strong></div>`}function svgWrap(markup,w,h,desc){return `<figure class="chart-figure"><svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(desc)}">${markup}</svg><figcaption>${esc(desc)}</figcaption></figure>`}function ticks(max){const top=Math.max(1,Math.ceil(max/4)*4);return {top,values:[0,top/4,top/2,top*3/4,top]}}
 function horizontalChart(sel,data,xLabel,fmt){const entries=Object.entries(data).sort((a,b)=>(b[1]??-1)-(a[1]??-1)),w=800,row=34,left=190,right=58,top=24,bottom=44,h=top+bottom+entries.length*row,{top:max,values}=ticks(Math.max(...entries.map(x=>x[1]||0)));let s=values.map(v=>`<line x1="${left}" y1="${top}" x2="${left+(w-left-right)*v/max}" y2="${h-bottom}" class="gridline"/><text x="${left+(w-left-right)*v/max}" y="${h-25}" text-anchor="middle" class="tick">${fmt(v)}</text>`).join('');entries.forEach(([name,val],i)=>{const y=top+i*row+6,width=(val||0)/max*(w-left-right);s+=`<text x="${left-10}" y="${y+15}" text-anchor="end" class="label">${esc(name)}</text><rect x="${left}" y="${y}" width="${width}" height="18" rx="4" class="bar"/><text x="${left+width+7}" y="${y+15}" class="value">${fmt(val)}</text>`});s+=`<text x="${(left+w-right)/2}" y="${h-5}" text-anchor="middle" class="axis-title">${esc(xLabel)}</text><text x="18" y="${h/2}" transform="rotate(-90 18 ${h/2})" text-anchor="middle" class="axis-title">Membro</text>`;$(sel).innerHTML=svgWrap(s,w,h,`Gráfico de barras: ${xLabel} por membro`)}
