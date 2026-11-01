@@ -6,6 +6,7 @@
   <meta name="description" content="Estatísticas privadas de conversas exportadas do WhatsApp.">
   <title>Grupo em números</title>
   <link rel="stylesheet" href="styles.css">
+  <style>.date-filter{display:flex;align-items:end;gap:12px;background:#eef2e9;border-radius:14px;padding:14px 16px;margin:-8px 0 16px;flex-wrap:wrap}.date-filter div{margin-right:auto}.date-filter strong,.date-filter span{display:block}.date-filter span{font-size:.75rem;color:#68726e;margin-top:3px}.date-filter label{font-size:.75rem;font-weight:800;display:grid;gap:4px}.date-filter input{font:inherit;padding:7px;border:1px solid #bbc6bc;border-radius:7px}.text-button{border:0;background:transparent;color:#3e765d;text-decoration:underline;font:inherit;font-size:.8rem;cursor:pointer;padding:9px}@media(max-width:680px){.date-filter{align-items:stretch}.date-filter div{width:100%}}</style>
 </head>
 <body>
   <main class="shell">
@@ -37,6 +38,13 @@
         <div><p class="eyebrow">RELATÓRIO DE CONVERSA</p><h2 id="reportTitle">Grupo em números</h2><p id="reportMeta"></p></div>
         <div class="actions no-print"><button id="newFile" class="button secondary">Novo ficheiro</button><button id="pdfButton" class="button">Guardar PDF</button></div>
       </header>
+      <section class="date-filter no-print" aria-label="Filtrar período">
+        <div><strong>Período do relatório</strong><span>Deixe em branco para usar toda a conversa.</span></div>
+        <label>Início <input id="dateFrom" type="date"></label>
+        <label>Fim <input id="dateTo" type="date"></label>
+        <button id="applyDates" class="button secondary" type="button">Aplicar</button>
+        <button id="clearDates" class="text-button" type="button">Limpar</button>
+      </section>
       <section id="summaryCards" class="summary"></section>
       <section class="grid two"><article class="card"><h3>Mensagens por membro</h3><div id="messagesChart"></div></article><article class="card"><h3>Tamanho médio da mensagem</h3><div id="lengthChart"></div></article></section>
       <section class="grid two"><article class="card"><h3>Atividade por hora</h3><div id="hourChart"></div></article><article class="card"><h3>Atividade por dia da semana</h3><div id="weekdayChart"></div></article></section>
